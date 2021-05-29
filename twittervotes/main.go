@@ -24,6 +24,7 @@ type poll struct {
 	Options []string
 }
 
+// dbから選択肢を文字列スライスとして出力する
 func loadOptions() ([]string, error) {
 	var options []string
 	// Findによるフィルタリングを行わない
@@ -33,6 +34,7 @@ func loadOptions() ([]string, error) {
 	for iter.Next(&p) {
 		options = append(options, p.Options...)
 	}
+	// メモリ解放
 	iter.Close()
 	return options, iter.Err()
 }
