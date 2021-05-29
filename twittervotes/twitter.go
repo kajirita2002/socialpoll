@@ -147,3 +147,31 @@ func readFromTwitter(votes chan<- string) {
 		}
 	}
 }
+
+// 戻り値はstruct{}型のチャネル(シグナルのチャネル(メモリを消費しない))
+// stopchanは受信専用のシグナルのチャネル
+func startTwitterStream(stopchan <-chan struct{}, votes chan<- string) <-chan struct{} {
+	// バッファサイズが１(シグナルのチャネルに書き込まれると誰かがチャネルからシグナルを読み出すまで同じチャネルへの書き込みはブロックされる)
+	stoppedchan := make(chan struct{}, 1)
+	go func() {
+		// 繰り返し終了後goroutineから我々に通知される
+		defer func() {
+			stoppedchan <- struct{}{}
+		}()
+		for {
+			select {
+			// stopchan(停止のためのシグナル)を受け取ると繰り返しを終了する
+			case <-stopchan:
+				log.Println("Twitterへの問い合わせを終了します。。。")
+				return
+			// readFromTwitterを繰り返し呼ぶ
+			default:
+				log.Println("Twitterに問い合わせます")
+				readFromTwitter(votes)
+				log.Println("(待機中)")
+				time.Sleep(10 * time.Second) // 待機してから再接続する
+			}
+		}
+	}()
+	return stoppedchan
+}
